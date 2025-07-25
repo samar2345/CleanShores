@@ -1,96 +1,54 @@
-  
+// Data Fetching: Uses useEffect to fetch events via eventService.getAllEvents().
+// Conditional Fetching: Only fetches if authStatus is true, as the backend getAllEvents is protected.
 
+// client/src/pages/Events.jsx
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:5000/api/v1'; // Change if your backend URL is different
-
-
-function EventCard({ event }) {
-  const [joining, setJoining] = React.useState(false);
-  const [joinMsg, setJoinMsg] = React.useState('');
-  const [alreadyJoined, setAlreadyJoined] = React.useState(false);
-
-  useEffect(() => {
-    // Assume event.attendees is an array of user IDs who joined
-    const userId = localStorage.getItem('userId'); // Store userId in localStorage after login
-    if (event.attendees && userId && event.attendees.includes(userId)) {
-      setAlreadyJoined(true);
-      setJoinMsg('You have already joined this event.');
-    }
-  }, [event]);
-
-  const handleJoin = async () => {
-    setJoining(true);
-    setJoinMsg('');
-    try {
-      const token = localStorage.getItem('token');
-      const userId = localStorage.getItem('userId');
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const res = await axios.post(`${API_BASE_URL}/events/${event._id}/join`, {}, { headers });
-      if (res.data.success) {
-        setJoinMsg('Successfully joined event!');
-        setAlreadyJoined(true);
-      } else {
-        setJoinMsg(res.data.message || 'Could not join event.');
-      }
-    } catch (err) {
-      setJoinMsg(err.response?.data?.message || 'Could not join event.');
-    } finally {
-      setJoining(false);
-    }
-  };
-
-  return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h3 className="text-xl font-bold mb-2 text-blue-700">{event.title}</h3>
-      <p className="text-gray-700 mb-2">{event.description}</p>
-      <p className="text-gray-500 mb-1">Date: {new Date(event.date).toLocaleDateString()}</p>
-      <p className="text-gray-500 mb-1">Location: {event.location}</p>
-      <button
-        className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-        onClick={handleJoin}
-        disabled={joining || alreadyJoined}
-      >
-        {alreadyJoined ? 'Already Joined' : (joining ? 'Joining...' : 'Join Event')}
-      </button>
-      {joinMsg && <p className="mt-2 text-green-600">{joinMsg}</p>}
-    </div>
-  );
-}
+import eventService from '../api/events.js'; // Import the new event service
+import { useSelector } from 'react-redux'; // For auth status (to conditionally display)
+import { Link } from 'react-router-dom'; // For "View Details" link
 
 const Events = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const authStatus = useSelector(state => state.auth.authStatus); // Get auth status from Redux
 
   useEffect(() => {
     const fetchEvents = async () => {
       setLoading(true);
       setError('');
       try {
-        const token = localStorage.getItem('token');
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await axios.get(`${API_BASE_URL}/events`, { headers });
-        if (res.data.success) {
-          setEvents(res.data.data);
-        } else {
-          setError(res.data.message || 'Failed to fetch events.');
-        }
+        // Assuming events require authentication to view for now based on backend setup.
+        // If your main.jsx route for /events has authentication={false}, it means public view is intended,
+        // but backend still requires a token. Adjust AuthLayout or backend if truly public.
+        // For now, if not logged in, this call will likely fail (handled by error state).
+        
+        const allEvents = await eventService.getAllEvents({ status: 'upcoming' }); // Fetch only upcoming events by default
+        setEvents(allEvents);
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to fetch events.');
+        console.error("Events fetch error:", err.response?.data || err.message);
+        setError(err.message || 'Failed to load events. Please try again.');
       } finally {
         setLoading(false);
       }
     };
-    fetchEvents();
-  }, []);
+
+    // Only fetch if authenticated. If events are public, AuthLayout should not protect,
+    // and this component should handle case where no token is present, or backend allows unauthenticated.
+    // Given backend `getAllEvents` has `verifyJWT` in route, we need auth.
+    if (authStatus) { // Only fetch events if user is authenticated
+        fetchEvents();
+    } else {
+        setLoading(false); // If not authenticated, stop loading without fetching
+        setError("Please log in to view events."); // Display message
+    }
+  }, [authStatus]); // Re-run when auth status changes
 
   if (loading) {
     return (
       <div className="container py-12 text-center">
-        <h2 className="text-3xl font-semibold mb-4">Events Page</h2>
-        <p className="text-gray-600">Loading events...</p>
+        <h2 className="text-3xl font-semibold">Loading Events...</h2>
+        <p className="text-gray-600 mt-4">Fetching upcoming cleanup drives.</p>
       </div>
     );
   }
@@ -98,26 +56,38 @@ const Events = () => {
   if (error) {
     return (
       <div className="container py-12 text-center">
-        <h2 className="text-3xl font-semibold mb-4">Events Page</h2>
-        <p className="text-red-600">{error}</p>
+        <h2 className="text-3xl font-semibold text-red-600">Error: {error}</h2>
+        {/* Suggest login if error is auth-related */}
+        {!authStatus && <p className="text-gray-600 mt-4">You need to be logged in to view events. Please <Link to="/login" className="text-blue-600 hover:underline">login</Link>.</p>}
       </div>
     );
   }
 
   return (
-    <div className="container py-12">
-      <h2 className="text-3xl font-semibold mb-4 text-center">Upcoming Cleanup Events</h2>
+    <div className="container mx-auto py-10">
+      <h2 className="text-4xl font-bold text-center mb-8 text-gray-800">Upcoming Cleanup Events</h2>
       {events.length === 0 ? (
-        <p className="text-gray-600 text-center">No events found.</p>
+        <p className="text-center text-gray-600 text-lg">No upcoming events found. Check back later!</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {events.map(event => (
-            <EventCard key={event._id} event={event} />
+            <div key={event._id} className="bg-white rounded-lg shadow-md p-6 border border-gray-200 hover:shadow-lg transition-shadow">
+              <h3 className="text-xl font-semibold mb-2 text-blue-700">{event.title}</h3>
+              <p className="text-gray-600 text-sm mb-2"><strong>Date:</strong> {new Date(event.date).toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+              <p className="text-gray-600 text-sm mb-4"><strong>Time:</strong> {event.startTime} - {event.endTime} | <strong>Location:</strong> {event.locationName}</p>
+              <p className="text-gray-700 text-base line-clamp-3">{event.description}</p>
+              <div className="mt-4 flex justify-end">
+                <Link to={`/events/${event._id}`} className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors text-sm">
+                  View Details
+                </Link>
+                {/* TODO: Add Enroll/Leave buttons here based on user enrollment status */}
+              </div>
+            </div>
           ))}
         </div>
       )}
     </div>
   );
-}
+};
 
 export default Events;

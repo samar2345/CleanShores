@@ -6,7 +6,8 @@ import authService from '../../api/auth.js'; // Authentication API service
 const SignupAdmin = () => {
   const navigate = useNavigate(); // Hook for programmatic navigation
   
-  // State to manage form data, including File objects for uploads
+  // State to manage all form data, including File objects for uploads.
+  // Initialize with empty strings or null for fields.
   const [formData, setFormData] = useState({
     fullName: '',
     username: '',
@@ -23,13 +24,15 @@ const SignupAdmin = () => {
     organizationRegistrationProof: null, // Optional file
   });
   
-  // State for error messages and loading status
+  // State for displaying error messages to the user.
   const [error, setError] = useState('');
+  // State to indicate loading status during API calls, useful for disabling forms/buttons.
   const [loading, setLoading] = useState(false);
 
   /**
    * Handles changes for text input fields.
-   * @param {Event} e - The change event from the input.
+   * Updates the corresponding state property based on the input's 'name' attribute.
+   * @param {Event} e - The change event from the input element.
    */
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -37,48 +40,53 @@ const SignupAdmin = () => {
 
   /**
    * Handles changes for file input fields.
-   * @param {Event} e - The change event from the file input.
+   * Extracts the selected File object and updates state for the corresponding field name.
+   * @param {Event} e - The change event from the file input element.
    */
   const handleFileChange = (e) => {
-    // Access the selected file from e.target.files[0] and update state for the corresponding field name.
+    // Access the selected file from e.target.files[0]
     setFormData({ ...formData, [e.target.name]: e.target.files[0] });
   };
 
   /**
    * Handles the form submission for admin registration.
-   * Performs client-side validation and calls the backend API.
+   * Performs client-side validation, constructs FormData, and calls the backend API.
+   * @param {Event} e - The form submission event.
    */
   const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevent default form submission
-    setError(''); // Clear any previous errors
+    e.preventDefault(); // Prevent default browser form submission (page reload)
+    setError(''); // Clear any previous error messages
     setLoading(true); // Set loading state to true during API call
 
-    // Client-side validation: Password match
+    // --- Client-side Validations ---
+    // 1. Password Match Validation
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
-      setLoading(false);
+      setLoading(false); // Reset loading and return if validation fails
       return;
     }
-    // Client-side validation: Required document files
+    // 2. Required Document Files Validation
     if (!formData.profilePicture || !formData.addressProof || !formData.idProof) {
         setError('Profile picture, Address Proof, and ID Proof are required.');
         setLoading(false);
         return;
     }
-    // Client-side validation: Conditional required field for 'Registered NGO' type
+    // 3. Conditional Required Field for 'Registered NGO' Type
     if (formData.organizationType === 'Registered NGO' && !formData.organizationRegistrationProof) {
         setError('Organization Registration Proof is required for Registered NGO type.');
         setLoading(false);
         return;
     }
+    // --- End Client-side Validations ---
 
-    // Create FormData object to send multipart/form-data (for files and text fields).
+    // Create a FormData object to send multipart/form-data.
+    // This is required when sending files along with text data to the backend.
     const dataToSend = new FormData();
     for (const key in formData) {
       // Exclude 'confirmPassword' as it's only for client-side validation.
       // Append only non-null values (for optional fields like organizationRegistrationProof if not selected).
       if (key !== 'confirmPassword' && formData[key] !== null) {
-        dataToSend.append(key, formData[key]);
+        dataToSend.append(key, formData[key]); // Append key-value pair to FormData
       }
     }
 
@@ -98,7 +106,7 @@ const SignupAdmin = () => {
     } catch (err) {
       // Catch and display general API errors.
       setError(err.message || 'Admin registration failed. Please try again.');
-      console.error("SignupAdmin API Error:", err); // Log full error for debugging.
+      console.error("SignupAdmin API Error:", err); // Log the full error for debugging.
     } finally {
       setLoading(false); // Reset loading state.
     }
@@ -109,7 +117,7 @@ const SignupAdmin = () => {
       <h2 className="text-3xl font-semibold mb-6">Register as an Admin</h2>
       <form onSubmit={handleSubmit} className="max-w-xl mx-auto p-8 bg-white rounded-lg shadow-lg text-left">
         {/* Display error message */}
-        {error && <div className="alert alert-danger">{error}</div>}
+        {error && <div className="alert alert-danger text-center mb-4">{error}</div>}
         
         {/* Full Name Input */}
         <div className="form-group mb-4">
@@ -125,7 +133,7 @@ const SignupAdmin = () => {
         
         {/* Email Input */}
         <div className="form-group mb-4">
-          <label htmlFor="email" className="block text-gray-700 text-sm font-bold mb-2">Email:</label>
+          <label htmlFor="email">Email:</label>
           <input type="email" id="email" name="email" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={formData.email} onChange={handleChange} required disabled={loading} />
         </div>
         
