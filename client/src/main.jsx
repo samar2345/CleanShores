@@ -29,9 +29,12 @@ import AdminDashboard from './pages/Admin/AdminDashboard.jsx';
 import EventDetails from './pages/Events/EventDetails.jsx';
 import EventEdit from './pages/Events/EventEdit.jsx';
 
-// NEW: Group specific imports
+// Group specific imports
 import GroupDetails from './pages/Groups/GroupDetails.jsx';
-import GroupChatPage from './pages/Groups/GroupChatPage.jsx'; // <-- IMPORT NEW GROUP CHAT PAGE
+import GroupChatPage from './pages/Groups/GroupChatPage.jsx';
+
+// NEW: Shop specific import
+import ProductDetails from './pages/Shop/ProductDetails.jsx'; // <-- IMPORT NEW PRODUCT DETAILS
 
 // Define the router configuration
 const router = createBrowserRouter([
@@ -40,10 +43,10 @@ const router = createBrowserRouter([
     element: <App />,
     children: [
         { path: "/", element: <Home /> },
-        { path: "/login", element: (<AuthLayout authentication={false}><Login /></AuthLayout>) },
-        { path: "/signup", element: (<AuthLayout authentication={false}><Signup /></AuthLayout>) },
-        { path: "/signup/user", element: (<AuthLayout authentication={false}><SignupUser /></AuthLayout>) },
-        { path: "/signup/admin", element: (<AuthLayout authentication={false}><SignupAdmin /></AuthLayout>) },
+        { path: "/login", element: (<AuthLayout authentication={false} isAuthPage={true}><Login /></AuthLayout>) },
+        { path: "/signup", element: (<AuthLayout authentication={false} isAuthPage={true}><Signup /></AuthLayout>) },
+        { path: "/signup/user", element: (<AuthLayout authentication={false} isAuthPage={true}><SignupUser /></AuthLayout>) },
+        { path: "/signup/admin", element: (<AuthLayout authentication={false} isAuthPage={true}><SignupAdmin /></AuthLayout>) },
         { path: "/dashboard", element: (<AuthLayout authentication={true}><Dashboard /></AuthLayout>) },
         {
             path: "/events",
@@ -69,7 +72,22 @@ const router = createBrowserRouter([
                 </AuthLayout>
             ),
         },
-        { path: "/shop", element: (<AuthLayout authentication={false}><Shop /></AuthLayout>) },
+        {
+            path: "/shop",
+            element: (
+                <AuthLayout authentication={false}>
+                    <Shop />
+                </AuthLayout>
+            ),
+        },
+        { // NEW: Product Details Route
+            path: "/shop/:productId",
+            element: (
+                <AuthLayout authentication={false}> {/* Product details can be viewed publicly */}
+                    <ProductDetails />
+                </AuthLayout>
+            ),
+        },
         {
             path: "/groups",
             element: (
@@ -86,10 +104,10 @@ const router = createBrowserRouter([
                 </AuthLayout>
             ),
         },
-        { // NEW: Group Chat Page Route
+        { // Group Chat Page Route
             path: "/groups/:groupId/chat",
             element: (
-                <AuthLayout authentication={true}> {/* Chat requires authentication and group membership */}
+                <AuthLayout authentication={true}>
                     <GroupChatPage />
                 </AuthLayout>
             ),

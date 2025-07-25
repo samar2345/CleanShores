@@ -1,4 +1,3 @@
-// client/src/pages/Auth/SignupAdmin.jsx
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import authService from '../../api/auth.js'; // Authentication API service
@@ -24,7 +23,7 @@ const SignupAdmin = () => {
     organizationRegistrationProof: null, // Optional file
   });
   
-  // State for displaying error messages to the user.
+  // State for error messages and loading status
   const [error, setError] = useState('');
   // State to indicate loading status during API calls, useful for disabling forms/buttons.
   const [loading, setLoading] = useState(false);
@@ -44,7 +43,7 @@ const SignupAdmin = () => {
    * @param {Event} e - The change event from the file input element.
    */
   const handleFileChange = (e) => {
-    // Access the selected file from e.target.files[0]
+    // Access the selected file from e.target.files[0] and update state for the corresponding field name.
     setFormData({ ...formData, [e.target.name]: e.target.files[0] });
   };
 
@@ -71,7 +70,7 @@ const SignupAdmin = () => {
         setLoading(false);
         return;
     }
-    // 3. Conditional Required Field for 'Registered NGO' Type
+    // 3. Conditional Required Field for 'Registered NGO' type
     if (formData.organizationType === 'Registered NGO' && !formData.organizationRegistrationProof) {
         setError('Organization Registration Proof is required for Registered NGO type.');
         setLoading(false);

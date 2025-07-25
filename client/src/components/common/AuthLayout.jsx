@@ -1,6 +1,11 @@
-import React, { useEffect, useState } from 'react';
+// This component acts as a higher-order component (HOC) or wrapper for route protection and redirection 
+// based on authentication status and user roles. 
+// It's critical for implementing protected routes in react-router-dom.import React, { useEffect, useState } from 'react';
+// client/src/components/common/AuthLayout.jsx
+// Ensure all hooks are imported directly from 'react'
+import React, { useEffect, useState } from 'react'; // <-- CORRECTED IMPORT
 import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux'; // Redux hook to access global state
+import { useSelector } from 'react-redux';
 
 /**
  * AuthLayout component for protecting routes.
@@ -82,4 +87,4 @@ const AuthLayout = ({ children, authentication = true, allowedRoles = [] }) => {
     );
 };
 
-export default AuthLayout;
+export default AuthLayout;  

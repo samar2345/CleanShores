@@ -1,4 +1,5 @@
-// client/src/components/common/Header.jsx
+// This component provides the top navigation bar, 
+// dynamically adjusting links based on authentication status and user roles retrieved from the Redux store.
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux'; // Redux hooks to access state and dispatch actions

@@ -96,10 +96,6 @@ const EventEdit = () => {
           geoFenceRadiusKm: Number(formData.geoFenceRadiusKm),
       };
 
-      // We'll add an updateEvent method to eventService
-      // For now, let's use a placeholder if not already in eventService
-      // In the `eventService.js` we created, we only have `getAllEvents` and `getEventById`.
-      // We need to add `updateEvent` to it. This will be done in step 4.
       const response = await eventService.updateEvent(eventId, dataToSend); 
 
       if (response) { // Assuming updateEvent returns true or the updated event object on success
@@ -119,6 +115,7 @@ const EventEdit = () => {
     return (
       <div className="container py-12 text-center">
         <h2 className="text-3xl font-semibold">Loading Event for Editing...</h2>
+        <p className="text-gray-600 mt-4">Please wait.</p>
       </div>
     );
   }
@@ -169,7 +166,7 @@ const EventEdit = () => {
             <input type="number" step="any" id="latitude" name="latitude" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={formData.latitude} onChange={handleChange} required disabled={isSubmitting} />
           </div>
           <div className="form-group">
-            <label htmlFor="longitude" className="block text-gray-700 text-sm font-bold mb-2">Longitude:</label>
+            <label htmlFor="longitude">Longitude:</label>
             <input type="number" step="any" id="longitude" name="longitude" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={formData.longitude} onChange={handleChange} required disabled={isSubmitting} />
           </div>
           <div className="form-group">

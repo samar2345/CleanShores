@@ -15,6 +15,12 @@ class GroupService {
         return token ? { Authorization: `Bearer ${token}` } : {};
     }
 
+    /**
+     * Fetches all public groups from the backend.
+     * Accessible by any logged-in user.
+     * @param {object} [filters={}] - Optional filters like { search: 'community' }.
+     * @returns {Promise<object[]>} An array of group objects.
+     */
     async getAllGroups(filters = {}) {
         try {
             const params = new URLSearchParams(filters).toString();
@@ -26,6 +32,12 @@ class GroupService {
         }
     }
 
+    /**
+     * Fetches details for a single group by its ID.
+     * Accessible by any logged-in user (if they are a member or group is public).
+     * @param {string} groupId - The ID of the group to fetch.
+     * @returns {Promise<object>} The group object.
+     */
     async getGroupById(groupId) {
         try {
             const response = await this.api.get(`/groups/${groupId}`, { headers: this._getAuthHeaders() });
@@ -36,6 +48,12 @@ class GroupService {
         }
     }
 
+    /**
+     * Fetches historical messages for a specific group.
+     * Accessible by group members only.
+     * @param {string} groupId - The ID of the group.
+     * @returns {Promise<object[]>} An array of message objects.
+     */
     async getGroupMessages(groupId) {
         try {
             const response = await this.api.get(`/groups/${groupId}/messages`, { headers: this._getAuthHeaders() });

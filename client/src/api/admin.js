@@ -1,6 +1,7 @@
 //This new API service will handle all calls to the backend's api/v1/admin and api/v1/analytics endpoints.
 
 // client/src/api/admin.js
+// client/src/api/admin.js
 import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:5000/api/v1'; // Your backend API base URL
@@ -12,7 +13,7 @@ class AdminService {
         });
     }
 
-    // Helper to get token for authenticated requests (re-used from auth.js)
+    // Helper to get token for authenticated requests
     _getAuthHeaders() {
         const token = localStorage.getItem('token');
         return token ? { Authorization: `Bearer ${token}` } : {};

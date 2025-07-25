@@ -1,10 +1,3 @@
-// client/src/pages/Auth/Login.jsx
-// import React, { useState } from 'react';
-// import { Link, useNavigate } from 'react-router-dom';
-// import { useDispatch } from 'react-redux'; // Hook to dispatch Redux actions
-// import authService from '../../api/auth.js'; // Authentication API service
-// import { login as authLogin } from '../../store/authSlice.js'; // Import and rename login action to avoid conflict
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux'; // Hook to dispatch Redux actions
@@ -41,7 +34,7 @@ const Login = () => { // Corrected: This is the start of the functional componen
       if (response && response.user) {
         // Dispatch the Redux login action to update the global authentication state.
         // `response.user` is passed directly as the payload to match authSlice.js reducer.
-        dispatch(authLogin(response.user)); // Corrected: pass user object directly
+        dispatch(authLogin(response.user)); // Pass user data directly as payload
         
         // Redirect the user based on their authenticated role
         if (response.user.role === 'ngo') {
@@ -89,7 +82,7 @@ const Login = () => { // Corrected: This is the start of the functional componen
         
         {/* Password Input Field */}
         <div className="form-group mb-6">
-          <label htmlFor="password" className="block text-gray-700 text-sm font-bold mb-2">Password:</label>
+          <label htmlFor="password">Password:</label>
           <input
             type="password"
             id="password"
