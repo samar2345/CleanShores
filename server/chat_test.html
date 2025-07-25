@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clean Shores Chat Test</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background-color: #fff; }
+        h1 { text-align: center; color: #333; }
+        .log-area { border: 1px solid #ccc; padding: 10px; min-height: 200px; max-height: 400px; overflow-y: scroll; background-color: #eee; margin-bottom: 20px; }
+        input[type="text"] { width: calc(100% - 100px); padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-right: 10px; }
+        button { padding: 8px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .input-group { display: flex; margin-bottom: 10px; }
+        .instructions { background-color: #e6f7ff; border-left: 5px solid #2196F3; padding: 15px; margin-top: 20px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Clean Shores Chat Test Client</h1>
+        <p>Open your browser's developer console (F12) to see logs.</p>
+
+        <div class="instructions">
+            <h3>Instructions:</h3>
+            <ol>
+                <li>Replace <code>'YOUR_USER_A_ACCESS_TOKEN'</code> and <code>'YOUR_GROUP_ID'</code> in the script below with actual values.</li>
+                <li>Save this file as <code>chat_test.html</code>.</li>
+                <li>Serve this file using a local HTTP server (e.g., Node.js <code>live-server</code> npm package, or Python's <code>http.server</code>). Direct <code>file://</code> access may have CORS issues for <code>import</code> and Socket.IO connection.</li>
+                <li>Open this HTML file in your browser.</li>
+                <li>Open the browser's **Developer Console (F12)** to see connection status and messages.</li>
+                <li>To send a message, type: <code>sendMessage(YOUR_GROUP_ID, 'Your message here')</code> in the console and press Enter.</li>
+                <li>For multi-user testing, open another tab/window, change the <code>accessToken</code> to <code>USER_B_ACCESS_TOKEN</code>, and repeat.</li>
+            </ol>
+        </div>
+
+        <div class="log-area" id="log"></div>
+
+        <div class="input-group">
+            <input type="text" id="messageInput" placeholder="Type your message...">
+            <button onclick="sendMessageFromUI()">Send</button>
+        </div>
+        <div class="input-group">
+            <input type="text" id="groupIdInput" placeholder="Group ID (for sending)">
+            <button onclick="setGroupIdForUI()">Set Group ID</button>
+        </div>
+        
+    </div>
+
+    <script type="module">
+        // Import the Socket.IO client library (ESM version)
+        import { io } from 'https://cdn.socket.io/4.7.5/socket.io.esm.min.js';
+
+        const logElement = document.getElementById('log');
+        let currentGroupId = ''; // Store the group ID for sending messages from UI
+
+        function appendLog(message, type = 'info') {
+            const p = document.createElement('p');
+            p.textContent = `[${new Date().toLocaleTimeString()}]: ${message}`;
+            p.style.color = type === 'error' ? 'red' : (type === 'success' ? 'green' : 'black');
+            logElement.appendChild(p);
+            logElement.scrollTop = logElement.scrollHeight; // Scroll to bottom
+        }
+
+        // --- Configuration ---
+        const accessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2ODdmOWMyNjkwNThiNWMxMDVhNzM5ZjciLCJlbWFpbCI6ImFsaWNlLm0uc21pdGhAZXhhbXBsZS5jb20iLCJ1c2VybmFtZSI6ImFsaWNlc21pdGgiLCJmdWxsTmFtZSI6IkFsaWNlIE0uIFNtaXRoIiwicm9sZSI6InVzZXIiLCJzdGF0dXMiOiJ1c2VyX2FjdGl2ZSIsImlhdCI6MTc1MzM1MTkyMywiZXhwIjoxNzU0MjE1OTIzfQ.Rs2136IVuUGk53ga5zaJujPFeEJ8EZ62cKuG6AkMvIU'; // <--- REPLACE THIS WITH A REAL ACCESS TOKEN
+        const initialGroupId = '6881fab6e274b39a8ce6599f'; // <--- REPLACE THIS WITH A REAL GROUP ID (e.g., from Postman create group)
+        currentGroupId = initialGroupId;
+        document.getElementById('groupIdInput').value = initialGroupId;
+
+        // Connect to your server
+        const socket = io('http://localhost:5000', {
+            auth: {
+                token: accessToken
+            },
+            transports: ['websocket', 'polling'] // Prioritize websocket over long-polling
+        });
+
+        // --- Event Listeners ---
+        socket.on('connect', () => {
+            appendLog(`Connected to Socket.IO server! Socket ID: ${socket.id}`, 'success');
+            // After connecting and authenticating, join the initial group
+            if (currentGroupId) {
+                socket.emit('joinGroup', currentGroupId);
+                appendLog(`Attempting to join group: ${currentGroupId}`);
+            } else {
+                appendLog('No group ID set to join automatically.', 'warning');
+            }
+        });
+
+        socket.on('disconnect', (reason) => {
+            appendLog(`Disconnected from Socket.IO server. Reason: ${reason}`, 'error');
+        });
+
+        socket.on('connect_error', (error) => {
+            appendLog(`Connection Error: ${error.message}`, 'error');
+            console.error('Full Connection Error:', error);
+        });
+
+        socket.on('groupError', (message) => {
+            appendLog(`Group Error: ${message}`, 'error');
+        });
+
+        socket.on('messageError', (message) => {
+            appendLog(`Message Error: ${message}`, 'error');
+        });
+
+        socket.on('recentMessages', (messages) => {
+            appendLog(`Received ${messages.length} recent messages.`);
+            messages.forEach(msg => {
+                appendLog(`[${msg.sender.username}]: ${msg.content}`);
+            });
+        });
+
+        socket.on('receiveMessage', (message) => {
+            appendLog(`New message received from ${message.sender.username}: ${message.content}`, 'info');
+        });
+
+        socket.on('userJoined', (message) => {
+            appendLog(`User Joined: ${message}`, 'info');
+        });
+
+        socket.on('userLeft', (message) => {
+            appendLog(`User Left: ${message}`, 'info');
+        });
+
+        // --- Global Functions (for console or UI buttons) ---
+        window.sendMessage = function(groupId, content) {
+            if (!socket.connected) {
+                appendLog('Socket not connected. Cannot send message.', 'error');
+                return;
+            }
+            if (!groupId || !content) {
+                appendLog('Group ID and content are required to send message.', 'error');
+                return;
+            }
+            appendLog(`Sending message to ${groupId}: "${content}"`);
+            socket.emit('sendMessage', { groupId, content });
+        }
+
+        window.leaveGroup = function(groupId) {
+            if (!socket.connected) {
+                appendLog('Socket not connected. Cannot leave group.', 'error');
+                return;
+            }
+            if (!groupId) {
+                appendLog('Group ID is required to leave group.', 'error');
+                return;
+            }
+            appendLog(`Leaving group: ${groupId}`);
+            socket.emit('leaveGroup', groupId);
+        }
+
+        window.setGroupIdForUI = function() {
+            const inputVal = document.getElementById('groupIdInput').value;
+            if (inputVal) {
+                currentGroupId = inputVal;
+                appendLog(`Group ID set to: ${currentGroupId}. Attempting to join...`);
+                socket.emit('joinGroup', currentGroupId); // Try to join the new group
+            } else {
+                appendLog('Please enter a Group ID.', 'error');
+            }
+        }
+
+        window.sendMessageFromUI = function() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value;
+            if (message && currentGroupId) {
+                window.sendMessage(currentGroupId, message);
+                messageInput.value = ''; // Clear input
+            } else if (!currentGroupId) {
+                appendLog('Please set a Group ID before sending messages.', 'error');
+            } else {
+                appendLog('Message cannot be empty.', 'error');
+            }
+        }
+
+    </script>
+</body>
+</html>
