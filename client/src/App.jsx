@@ -7,41 +7,75 @@ import { useSelector, useDispatch } from 'react-redux'; // Redux hooks to intera
 import { login, logout, setLoading } from './store/authSlice.js'; // Action creators for auth state
 import authService from './api/auth.js'; // API service for authentication
 
-function App() {
-  const dispatch = useDispatch(); // Hook to dispatch actions
-  const isLoading = useSelector((state) => state.auth.isLoading); // Select the global loading state from Redux
+// function App() {
+//   const dispatch = useDispatch(); // Hook to dispatch actions
+//   const isLoading = useSelector((state) => state.auth.isLoading); // Select the global loading state from Redux
 
-  // `useEffect` hook to perform side effects (like data fetching) after render.
-  // This runs once when the component mounts (due to empty dependency array `[dispatch]`).
+//   // `useEffect` hook to perform side effects (like data fetching) after render.
+//   // This runs once when the component mounts (due to empty dependency array `[dispatch]`).
+//   useEffect(() => {
+//     /**
+//      * Checks the current authentication status by calling the backend API.
+//      * Dispatches Redux actions to update the global auth state.
+//      */
+//     const checkAuthStatus = async () => {
+//       try {
+//         // Attempt to get current user data from the backend using stored token.
+//         const userData = await authService.getCurrentUser();
+//         if (userData) {
+//           // If user data is successfully retrieved, dispatch the `login` action.
+//           // Corrected: Pass userData directly as payload
+//           dispatch(login(userData)); // <-- MODIFIED LINE
+//         } else {
+//           // If no user data, dispatch the `logout` action to ensure logged-out state.
+//           dispatch(logout());
+//         }
+//       } catch (error) {
+//         // Log any errors during authentication check and ensure user is logged out.
+//         console.error("Error checking auth status:", error);
+//         dispatch(logout());
+//       } finally {
+//         // Regardless of success or failure, set `isLoading` to false after the check.
+//         dispatch(setLoading(false));
+//       }
+//     };
+
+//     checkAuthStatus(); // Call the authentication check function.
+//   }, [dispatch]); // Dependency array: useEffect runs when `dispatch` changes (effectively once on mount).
+function App() {
+  const dispatch = useDispatch();
+  const isLoading = useSelector((state) => state.auth.isLoading);
+
   useEffect(() => {
-    /**
-     * Checks the current authentication status by calling the backend API.
-     * Dispatches Redux actions to update the global auth state.
-     */
     const checkAuthStatus = async () => {
+      console.log("\n--- App.jsx: Initial Auth Check Started ---");
       try {
-        // Attempt to get current user data from the backend using stored token.
-        const userData = await authService.getCurrentUser();
+        const tokenInLocalStorage = localStorage.getItem('token');
+        console.log("App.jsx Debug: Token in localStorage (before getCurrentUser):", tokenInLocalStorage ? tokenInLocalStorage.substring(0, 10) + '...' : "None");
+        
+        const userData = await authService.getCurrentUser(); // This calls API
+        
+        console.log("App.jsx Debug: Result from getCurrentUser:", userData ? `User fetched: ${userData.username}` : "No user data from API");
+
         if (userData) {
-          // If user data is successfully retrieved, dispatch the `login` action.
-          // Corrected: Pass userData directly as payload
-          dispatch(login(userData)); // <-- MODIFIED LINE
+          dispatch(login(userData));
+          console.log("App.jsx Debug: Redux login dispatched.");
         } else {
-          // If no user data, dispatch the `logout` action to ensure logged-out state.
           dispatch(logout());
+          console.log("App.jsx Debug: Redux logout dispatched (no user data).");
         }
       } catch (error) {
-        // Log any errors during authentication check and ensure user is logged out.
-        console.error("Error checking auth status:", error);
+        console.error("App.jsx Debug: Error in checkAuthStatus:", error);
         dispatch(logout());
       } finally {
-        // Regardless of success or failure, set `isLoading` to false after the check.
         dispatch(setLoading(false));
+        console.log("App.jsx Debug: isLoading set to false. Auth check finished.");
       }
+      console.log("--- App.jsx: Initial Auth Check Finished ---");
     };
 
-    checkAuthStatus(); // Call the authentication check function.
-  }, [dispatch]); // Dependency array: useEffect runs when `dispatch` changes (effectively once on mount).
+    checkAuthStatus();
+  }, [dispatch]);
 
   return (
     <>

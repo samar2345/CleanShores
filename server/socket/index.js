@@ -47,6 +47,9 @@ const initializeSocketIO = (server) => {
     });
 
     // --- Socket.IO Event Handlers ---
+    // Track joined users per group to prevent duplicate join notifications
+    const groupMembers = new Map(); // groupId -> Set of userIds
+
     io.on("connection", (socket) => {
         console.log(`User connected: ${socket.user.username} (ID: ${socket.id})`);
         onlineUsers.set(socket.user._id.toString(), socket.id); // Track online users
@@ -55,7 +58,6 @@ const initializeSocketIO = (server) => {
         socket.emit("connected", { userId: socket.user._id, username: socket.user.username });
 
         // 1. Join a Group Room
-        // Client emits 'joinGroup' with groupId
         socket.on("joinGroup", async (groupId) => {
             if (!mongoose.Types.ObjectId.isValid(groupId)) {
                 return socket.emit("groupError", "Invalid Group ID format.");
@@ -74,17 +76,24 @@ const initializeSocketIO = (server) => {
 
             socket.join(groupId); // Join the Socket.IO room for this group
             console.log(`${socket.user.username} joined room: ${groupId}`);
-            
+
+            // Track joined users per group
+            if (!groupMembers.has(groupId)) groupMembers.set(groupId, new Set());
+            const membersSet = groupMembers.get(groupId);
+            if (!membersSet.has(socket.user._id.toString())) {
+                membersSet.add(socket.user._id.toString());
+                socket.to(groupId).emit("userJoined", {
+                    userId: socket.user._id,
+                    username: socket.user.username
+                });
+            }
+
             // Optionally, fetch and emit recent messages to the joining user
             const recentMessages = await Message.find({ group: groupId })
                 .populate('sender', 'fullName username profilePicture')
                 .sort({ createdAt: 1 })
                 .limit(50); // Get last 50 messages
             socket.emit("recentMessages", recentMessages);
-            
-            // Notify others in the group that a user has joined
-            // Sending socket.user.username to ensure correct display
-            socket.to(groupId).emit("userJoined", `${socket.user.username} has joined the chat.`);
         });
 
         // 2. Send Message
@@ -134,7 +143,14 @@ const initializeSocketIO = (server) => {
         socket.on("leaveGroup", (groupId) => {
             socket.leave(groupId);
             console.log(`${socket.user.username} left room: ${groupId}`);
-            socket.to(groupId).emit("userLeft", `${socket.user.username} has left the chat.`);
+            const membersSet = groupMembers.get(groupId);
+            if (membersSet) {
+                membersSet.delete(socket.user._id.toString());
+                socket.to(groupId).emit("userLeft", {
+                    userId: socket.user._id,
+                    username: socket.user.username
+                });
+            }
         });
 
 
@@ -142,7 +158,16 @@ const initializeSocketIO = (server) => {
         socket.on("disconnect", () => {
             console.log(`User disconnected: ${socket.user.username} (ID: ${socket.id})`);
             onlineUsers.delete(socket.user._id.toString()); // Remove from online users map
-            // You might want to notify all rooms the user was in
+            // Remove user from all groupMembers sets and notify rooms
+            for (const [groupId, membersSet] of groupMembers.entries()) {
+                if (membersSet.has(socket.user._id.toString())) {
+                    membersSet.delete(socket.user._id.toString());
+                    socket.to(groupId).emit("userLeft", {
+                        userId: socket.user._id,
+                        username: socket.user.username
+                    });
+                }
+            }
         });
 
         // Handle errors on the socket

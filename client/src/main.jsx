@@ -61,7 +61,7 @@ const router = createBrowserRouter([
             element: (
                 <AuthLayout authentication={true}>
                     <EventDetails />
-                </AuthLayout>
+                </AuthLayout>   
             ),
         },
         { // Event Edit Route

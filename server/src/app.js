@@ -2,17 +2,18 @@
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import { ApiError } from './utils/ApiError.js'; 
+import { ApiError } from './utils/ApiError.js';
+import passport from 'passport'; // <-- ADD THIS IMPORT
+import '../config/passport.js'; // <-- IMPORT PASSPORT CONFIG (runs its code)
 
 // Import routes
 import userRouter from './routes/user.routes.js';
 import eventRouter from './routes/event.routes.js';
 import enrollmentRouter from './routes/enrollment.routes.js';
-import ecommerceRouter from './routes/ecommerce.routes.js'; 
-import attendanceRouter from './routes/attendance.routes.js'; 
-import groupRouter from './routes/group.routes.js'; 
-import adminRouter from './routes/admin.routes.js'; 
-
+import ecommerceRouter from './routes/ecommerce.routes.js';
+import attendanceRouter from './routes/attendance.routes.js';
+import groupRouter from './routes/group.routes.js';
+import adminRouter from './routes/admin.routes.js';
 
 const app = express();
 
@@ -26,15 +27,17 @@ app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 app.use(express.static("public"));
 app.use(cookieParser());
 
+// Initialize Passport.js middleware
+app.use(passport.initialize()); // <-- ADD THIS LINE
+
 // Routes declaration
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/events", eventRouter);
-app.use("/api/v1/events", enrollmentRouter); 
+app.use("/api/v1/events", enrollmentRouter);
 app.use("/api/v1/ecommerce", ecommerceRouter);
-// app.use("/api/v1/ecommerce", import('./routes/ecommerce.routes.js').then(module => module.default)); // Lazy load ecommerce routes
-app.use("/api/v1/attendance", attendanceRouter); 
+app.use("/api/v1/attendance", attendanceRouter);
 app.use("/api/v1/groups", groupRouter);
-app.use("/api/v1/admin",adminRouter);
+app.use("/api/v1/admin", adminRouter);
 
 // Global error handling middleware (from your example)
 app.use((err, req, res, next) => {
