@@ -59,7 +59,7 @@ const EventSchema = new Schema({
   },
   attendanceTokenExpiresAt: { // When the current attendanceToken expires
     type: Date,
-  },
+  },  
   attendanceWindowStart: { // When QR scan becomes active (e.g., 30 mins before start)
     type: Date,
   },
